@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
 
   zookeeper:
@@ -80,7 +82,21 @@ services:
     networks:
       - brain-health-network
 
+  brain-health-app:
+    build: .
+    container_name: brain-health-app
+    depends_on:
+      - kafka
+    ports:
+      - "8080:8080"
+    env_file:
+      - open_ai_api.env   # carrega variáveis externas
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      KAFKA_CONSUMER_GROUP_ID: brain-health-consumer-group
+    networks:
+      - brain-health-network
+
 networks:
   brain-health-network:
     driver: bridge
-
