@@ -1,5 +1,6 @@
 package com.fiap.brain.health.infrastructure.config;
 
+import com.fiap.brain.health.api.dto.kafka.BrainHealthRequestMessage;
 import com.fiap.brain.health.api.dto.kafka.BrainHealthResponseMessage;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringSerializer;
@@ -20,9 +21,10 @@ public class KafkaProducerConfig {
     @Value("${spring.kafka.bootstrap-servers}")
     private String bootstrapServers;
 
-    @Bean
-    public ProducerFactory<String, BrainHealthResponseMessage> producerFactory() {
+    private Map<String, Object> getCommonProducerConfig() {
         Map<String, Object> configProps = new HashMap<>();
+
+        // Connection
         configProps.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         configProps.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
         configProps.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerializer.class);
@@ -41,11 +43,26 @@ public class KafkaProducerConfig {
         // JSON serializer configuration
         configProps.put(JsonSerializer.ADD_TYPE_INFO_HEADERS, false);
 
-        return new DefaultKafkaProducerFactory<>(configProps);
+        return configProps;
+    }
+
+    @Bean
+    public ProducerFactory<String, BrainHealthResponseMessage> producerFactory() {
+        return new DefaultKafkaProducerFactory<>(getCommonProducerConfig());
     }
 
     @Bean
     public KafkaTemplate<String, BrainHealthResponseMessage> kafkaTemplate() {
         return new KafkaTemplate<>(producerFactory());
+    }
+
+    @Bean
+    public ProducerFactory<String, BrainHealthRequestMessage> requestProducerFactory() {
+        return new DefaultKafkaProducerFactory<>(getCommonProducerConfig());
+    }
+
+    @Bean
+    public KafkaTemplate<String, BrainHealthRequestMessage> requestKafkaTemplate() {
+        return new KafkaTemplate<>(requestProducerFactory());
     }
 }

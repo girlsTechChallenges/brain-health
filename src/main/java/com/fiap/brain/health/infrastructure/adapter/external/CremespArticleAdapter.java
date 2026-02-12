@@ -1,5 +1,6 @@
 package com.fiap.brain.health.infrastructure.adapter.external;
 
+import com.fiap.brain.health.domain.exception.ArticleSearchException;
 import com.fiap.brain.health.domain.model.MedicalArticle;
 import com.fiap.brain.health.domain.port.MedicalArticleRepositoryPort;
 import com.fiap.brain.health.infrastructure.adapter.html.HtmlFetchService;
@@ -13,14 +14,17 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 
 /**
  * INFRASTRUCTURE ADAPTER: CREMESP Article Repository
- *
  * Implements MedicalArticleRepositoryPort for CREMESP source.
  * This is an outbound adapter in Hexagonal Architecture.
- *
+ * Exception Handling:
+ * - Throws ArticleSearchException for external service failures
+ * - Returns Optional.empty() when article not found (not an error)
  * Can be easily replaced with:
  * - PubMedArticleAdapter
  * - SciELOArticleAdapter
@@ -53,12 +57,7 @@ public class CremespArticleAdapter implements MedicalArticleRepositoryPort {
             String searchUrl = buildSearchUrl(topic);
             log.info("Search URL: {}", searchUrl);
 
-            String html = htmlFetchService.fetchHtml(searchUrl);
-
-            if (html == null || html.isBlank()) {
-                log.error("Empty HTML returned for URL: {}", searchUrl);
-                return Optional.empty();
-            }
+            String html = fetchHtmlSafely(searchUrl);
 
             log.info("HTML received: {} characters", html.length());
 
@@ -83,16 +82,8 @@ public class CremespArticleAdapter implements MedicalArticleRepositoryPort {
                 }
             }
 
-            log.info("Article found: {}", articleUrl);
-            log.info("📎 Source URL: {}", articleUrl);
-
             // Fetch complete article content
-            String articleHtml = htmlFetchService.fetchHtml(articleUrl);
-
-            if (articleHtml == null || articleHtml.isBlank()) {
-                log.error("Failed to fetch article content: {}", articleUrl);
-                return Optional.empty();
-            }
+            String articleHtml = fetchHtmlSafely(articleUrl);
 
             String content = extractArticleContent(articleHtml);
 
@@ -108,15 +99,31 @@ public class CremespArticleAdapter implements MedicalArticleRepositoryPort {
             return MedicalArticle.of(limitedContent, articleUrl);
 
         } catch (Exception e) {
-            log.error("Error searching CREMESP: {}", e.getMessage(), e);
-            return Optional.empty();
+            log.error("Unexpected error searching CREMESP: {}", e.getMessage(), e);
+            throw new ArticleSearchException("Failed to search CREMESP: " + e.getMessage(), e);
+        }
+    }
+
+    private String fetchHtmlSafely(String url) {
+        try {
+            String html = htmlFetchService.fetchHtml(url);
+
+            if (html == null || html.isBlank()) {
+                throw new ArticleSearchException("Empty HTML returned from CREMESP for URL: " + url);
+            }
+
+            return html;
+        } catch (Exception e) {
+            log.error("Failed to fetch HTML from {}: {}", url, e.getMessage());
+            throw new ArticleSearchException("Failed to fetch content from CREMESP", e);
         }
     }
 
     private String buildSearchUrl(String topic) {
-        return String.format("%s?hl=pt-BR&q=%s",
-                baseUrl,
-                topic.replace(" ", "+"));
+        String encodedTopic = URLEncoder.encode(topic, StandardCharsets.UTF_8);
+        String url = String.format("%s?hl=pt-BR&q=%s", baseUrl, encodedTopic);
+        log.debug("Built search URL: {}", url);
+        return url;
     }
 
     private String extractSearchPageContent(String html) {
@@ -160,10 +167,7 @@ public class CremespArticleAdapter implements MedicalArticleRepositoryPort {
                 String href = link.attr("abs:href");
                 String text = link.text();
 
-                if (href == null || href.isBlank() ||
-                    href.startsWith("#") ||
-                    href.startsWith("javascript:") ||
-                    !href.startsWith("http")) {
+                if (href.isBlank() || href.startsWith("#") || href.startsWith("javascript:") || !href.startsWith("http")) {
                     continue;
                 }
 
@@ -218,14 +222,9 @@ public class CremespArticleAdapter implements MedicalArticleRepositoryPort {
                 content = doc.body();
             }
 
-            if (content != null) {
-                String text = content.text();
-                log.debug("Content extracted: {} characters", text.length());
-                return text;
-            }
-
-            log.warn("Could not extract content from HTML");
-            return null;
+            String text = content.text();
+            log.debug("Content extracted: {} characters", text.length());
+            return text;
 
         } catch (Exception e) {
             log.error("Error extracting article content: {}", e.getMessage());

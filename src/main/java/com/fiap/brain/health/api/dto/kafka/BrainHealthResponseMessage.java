@@ -1,16 +1,30 @@
 package com.fiap.brain.health.api.dto.kafka;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fiap.brain.health.api.dto.response.ArticleResponse;
 
 import java.time.LocalDateTime;
 
 public record BrainHealthResponseMessage(
+        @JsonProperty("messageId")
         String messageId,
-        String userId,
+
+        @JsonProperty("userId")
+        Long userId,
+
+        @JsonProperty("correlationId")
         String correlationId,
+
+        @JsonProperty("articleResponse")
         ArticleResponse articleResponse,
+
+        @JsonProperty("status")
         ProcessingStatus status,
+
+        @JsonProperty("errorMessage")
         String errorMessage,
+
+        @JsonProperty("processedAt")
         LocalDateTime processedAt
 ) {
     public enum ProcessingStatus {
@@ -33,7 +47,7 @@ public record BrainHealthResponseMessage(
 
     public static class Builder {
         private String messageId;
-        private String userId;
+        private Long userId;
         private String correlationId;
         private ArticleResponse articleResponse;
         private ProcessingStatus status;
@@ -45,7 +59,7 @@ public record BrainHealthResponseMessage(
             return this;
         }
 
-        public Builder userId(String userId) {
+        public Builder userId(Long userId) {
             this.userId = userId;
             return this;
         }

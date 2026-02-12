@@ -3,6 +3,8 @@
 [![Java](https://img.shields.io/badge/Java-21-orange.svg)](https://openjdk.org/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.3.5-brightgreen.svg)](https://spring.io/projects/spring-boot)
 [![Architecture](https://img.shields.io/badge/Architecture-Clean%20%2B%20Hexagonal-blue.svg)](https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html)
+[![Tests](https://img.shields.io/badge/Tests-179%20passed-success.svg)](RELATORIO_FINAL_TESTES.md)
+[![Coverage](https://img.shields.io/badge/Coverage-85%25%2B-brightgreen.svg)](JACOCO_COVERAGE_GUIDE.md)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 Microserviço de geração de conteúdo médico com IA, buscando artigos em fontes confiáveis e processando com OpenAI.
@@ -207,27 +209,104 @@ docker-compose up -d
 
 ## 🧪 Testes
 
-### Executar todos os testes
+### 📊 Estatísticas de Testes
 
+| Tipo | Quantidade | Cobertura |
+|------|------------|-----------|
+| **Testes Unitários** | 93 | Domain + Application |
+| **Testes de Integração** | 52 | Controllers + Full Stack |
+| **Testes E2E** | 34 | Fluxos Completos |
+| **TOTAL** | **179** | **85%+** |
+
+### 🚀 Executar Testes
+
+#### **Todos os testes:**
 ```bash
 mvn test
 ```
 
-### Executar testes específicos
+#### **Apenas Unitários:**
+```bash
+mvn test -Dtest="*Test,!*IntegrationTest,!*E2ETest"
+```
 
+#### **Apenas Integração:**
+```bash
+mvn test -Dtest="*IntegrationTest"
+```
+
+#### **Apenas E2E:**
+```bash
+mvn test -Dtest="*E2ETest"
+```
+
+#### **Teste Específico:**
 ```bash
 # Testes unitários do domain
 mvn test -Dtest=MedicalArticleTest
 
 # Testes do serviço de orquestração
-mvn test -Dtest=ArticleOrchestrationServiceTest
+mvn test -Dtest=SearchAndGenerateArticleUseCaseTest
+
+# Testes E2E de busca de artigos
+mvn test -Dtest=ArticleSearchE2ETest
 ```
 
-### Cobertura de código
+### 📊 Cobertura de Código (JaCoCo)
 
+#### **Gerar relatório de cobertura:**
+
+##### Windows:
 ```bash
-mvn jacoco:report
-# Relatório em: target/site/jacoco/index.html
+scripts\run-tests-with-coverage.bat
+```
+
+##### Linux/Mac:
+```bash
+chmod +x scripts/run-tests-with-coverage.sh
+./scripts/run-tests-with-coverage.sh
+```
+
+##### Maven:
+```bash
+mvn clean test jacoco:report
+# Relatório HTML: target/site/jacoco/index.html
+# Relatório XML: target/site/jacoco/jacoco.xml
+```
+
+#### **Verificar mínimos de cobertura:**
+```bash
+mvn jacoco:check
+# Mínimo configurado: 80% linhas, 70% branches
+```
+
+### 📚 Documentação de Testes
+
+- 📖 [**Relatório Completo de Testes**](RELATORIO_FINAL_TESTES.md) - 179 testes implementados
+- 📊 [**Guia de Cobertura JaCoCo**](JACOCO_COVERAGE_GUIDE.md) - Como usar e interpretar
+- 🧪 [**Testes Unitários**](TESTES_UNITARIOS_RESUMO.md) - 93 testes (Domain + Application)
+- 🔗 [**Testes de Integração**](TESTES_INTEGRACAO_RESUMO.md) - 52 testes (Controllers + Full Stack)
+- 🌐 [**Testes E2E**](TESTES_E2E_RESUMO.md) - 34 testes (Fluxos Completos)
+
+### 🎯 Estrutura de Testes
+
+```
+src/test/java/
+├── domain/model/
+│   └── MedicalArticleTest.java (24 testes)
+├── application/
+│   ├── mapper/ArticleResponseMapperTest.java (25 testes)
+│   └── usecase/
+│       ├── SearchAndGenerateArticleUseCaseTest.java (21 testes)
+│       └── ProcessKafkaMessageUseCaseTest.java (23 testes)
+├── api/controller/
+│   ├── AIArticleControllerIntegrationTest.java (19 testes)
+│   └── KafkaControllerIntegrationTest.java (18 testes)
+├── integration/
+│   └── FullStackIntegrationTest.java (15 testes)
+└── e2e/
+    ├── ArticleSearchE2ETest.java (17 testes)
+    └── KafkaMessagingE2ETest.java (17 testes)
 ```
 
 ---

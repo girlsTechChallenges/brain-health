@@ -1,0 +1,45 @@
+spring:
+  application:
+    name: brain-health
+
+  ai:
+    openai:
+      api-key: ${OPENAI_API_KEY}
+      chat:
+        options:
+          model: gpt-4o-mini
+          temperature: 0.7
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      group-id: ${KAFKA_CONSUMER_GROUP_ID:brain-health-consumer-group}
+
+# Kafka Topics
+kafka:
+  topic:
+    # Consumer: Tópico que a aplicação CONSOME (recebe requests de sistemas externos)
+    consumer: brain-health-request
+    # Producer: Tópico que a aplicação PRODUZ (envia responses processadas)
+    producer: brain-health-response
+
+# Actuator Configuration
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+  health:
+    kafka:
+      enabled: false
+
+# External Services Configuration
+external-services:
+  cremesp:
+    # Medical Article Search - CREMESP (Conselho Regional de Medicina do Estado de São Paulo)
+    base-url: https://cremesp.org.br/pesquisar.php
+    max-content-length: 8000
+    timeout-seconds: 30

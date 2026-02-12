@@ -1,24 +1,39 @@
 package com.fiap.brain.health.api.dto.kafka;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.time.LocalDateTime;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 public record BrainHealthRequestMessage(
-        String messageId,
-        String userId,
-        String question,
+        @JsonProperty("goalId")
+        Long goalId,
+
+        @JsonProperty("userId")
+        Long userId,
+
+        @JsonProperty("category")
         String category,
-        LocalDateTime requestedAt,
-        String correlationId
+
+        @JsonProperty("title")
+        String title,
+
+        @JsonProperty("description")
+        String description,
+
+        // Campos internos (não vêm do JSON externo, gerados pela aplicação)
+        String messageId,
+        String correlationId,
+        LocalDateTime requestedAt
 ) {
     public BrainHealthRequestMessage {
-        if (messageId == null || messageId.isBlank()) {
-            throw new IllegalArgumentException("messageId is required");
-        }
-        if (userId == null || userId.isBlank()) {
+        if (userId == null) {
             throw new IllegalArgumentException("userId is required");
         }
-        if (question == null || question.isBlank()) {
-            throw new IllegalArgumentException("question is required");
+
+        if (title == null || title.isBlank()) {
+            throw new IllegalArgumentException("title is required");
         }
     }
 
@@ -27,25 +42,22 @@ public record BrainHealthRequestMessage(
     }
 
     public static class Builder {
-        private String messageId;
-        private String userId;
-        private String question;
+        private Long goalId;
+        private Long userId;
         private String category;
-        private LocalDateTime requestedAt;
+        private String title;
+        private String description;
+        private String messageId;
         private String correlationId;
+        private LocalDateTime requestedAt;
 
-        public Builder messageId(String messageId) {
-            this.messageId = messageId;
+        public Builder goalId(Long goalId) {
+            this.goalId = goalId;
             return this;
         }
 
-        public Builder userId(String userId) {
+        public Builder userId(Long userId) {
             this.userId = userId;
-            return this;
-        }
-
-        public Builder question(String question) {
-            this.question = question;
             return this;
         }
 
@@ -54,8 +66,18 @@ public record BrainHealthRequestMessage(
             return this;
         }
 
-        public Builder requestedAt(LocalDateTime requestedAt) {
-            this.requestedAt = requestedAt;
+        public Builder title(String title) {
+            this.title = title;
+            return this;
+        }
+
+        public Builder description(String description) {
+            this.description = description;
+            return this;
+        }
+
+        public Builder messageId(String messageId) {
+            this.messageId = messageId;
             return this;
         }
 
@@ -64,14 +86,21 @@ public record BrainHealthRequestMessage(
             return this;
         }
 
+        public Builder requestedAt(LocalDateTime requestedAt) {
+            this.requestedAt = requestedAt;
+            return this;
+        }
+
         public BrainHealthRequestMessage build() {
             return new BrainHealthRequestMessage(
-                    messageId,
+                    goalId,
                     userId,
-                    question,
                     category,
-                    requestedAt,
-                    correlationId
+                    title,
+                    description,
+                    messageId,
+                    correlationId,
+                    requestedAt
             );
         }
     }

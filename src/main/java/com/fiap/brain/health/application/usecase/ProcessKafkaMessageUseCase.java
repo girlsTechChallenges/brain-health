@@ -3,6 +3,8 @@ package com.fiap.brain.health.application.usecase;
 import com.fiap.brain.health.api.dto.kafka.BrainHealthRequestMessage;
 import com.fiap.brain.health.api.dto.kafka.BrainHealthResponseMessage;
 import com.fiap.brain.health.application.mapper.ArticleResponseMapper;
+import com.fiap.brain.health.domain.exception.ArticleNotFoundException;
+import com.fiap.brain.health.domain.exception.InsufficientContentException;
 import com.fiap.brain.health.domain.model.MedicalArticle;
 import com.fiap.brain.health.domain.port.AIProcessingPort;
 import com.fiap.brain.health.domain.port.MedicalArticleRepositoryPort;
@@ -14,46 +16,66 @@ import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
+/**
+ * Use Case: Process Kafka Message
+ * Handles incoming Kafka messages from brain-health-request topic
+ * and generates responses for brain-health-response topic.
+ * Responsibilities:
+ * - Process article search requests from Kafka
+ * - Generate AI-powered responses
+ * - Handle errors gracefully with proper error responses
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class ProcessKafkaMessageUseCase {
+
+    private static final int MINIMUM_CONTENT_LENGTH = 100;
 
     private final MedicalArticleRepositoryPort articleRepository;
     private final AIProcessingPort aiProcessing;
     private final ArticleResponseMapper responseMapper;
 
     public BrainHealthResponseMessage process(BrainHealthRequestMessage request) {
-        log.info("Processing Kafka message - messageId: {}, correlationId: {}",
-                request.messageId(), request.correlationId());
+        log.info("Processing Kafka message - messageId: {}, correlationId: {}, title: {}",
+                request.messageId(), request.correlationId(), request.title());
 
         try {
-            MedicalArticle article = articleRepository.findByTopic(request.question())
-                    .orElseThrow(() -> new ArticleNotFoundException(request.question()));
+            // Usa o campo 'title' da mensagem Kafka para buscar o artigo
+            MedicalArticle article = articleRepository.findByTopic(request.title())
+                    .orElseThrow(() -> ArticleNotFoundException.forTopic(request.title()));
 
-            if (!article.hasMinimumContent(100)) {
-                log.warn("Article content too short for question: {}", request.question());
-                return buildErrorResponse(request, "Conteúdo do artigo insuficiente");
+            if (!article.hasMinimumContent(MINIMUM_CONTENT_LENGTH)) {
+                log.warn("Article content too short for title: {}", request.title());
+                throw new InsufficientContentException(
+                    article.getContentLength(),
+                    MINIMUM_CONTENT_LENGTH
+                );
             }
 
+            // Processa com IA usando o title
             AIProcessingPort.AIProcessingResult aiResult =
-                    aiProcessing.processArticle(request.question(), article);
+                    aiProcessing.processArticle(request.title(), article);
 
             var articleResponse = responseMapper.toArticleResponse(aiResult, article);
 
             return buildSuccessResponse(request, articleResponse);
 
         } catch (ArticleNotFoundException e) {
-            log.warn("Article not found for Kafka message: {}", e.getMessage());
-            return buildErrorResponse(request, "Artigo não encontrado: " + e.getMessage());
+            log.warn("Article not found for Kafka message title '{}': {}", request.title(), e.getMessage());
+            return buildErrorResponse(request, "Article not found: " + e.getMessage());
+
+        } catch (InsufficientContentException e) {
+            log.warn("Insufficient content for Kafka message title '{}': {}", request.title(), e.getMessage());
+            return buildErrorResponse(request, e.getMessage());
 
         } catch (AIProcessingPort.AIProcessingException e) {
-            log.error("AI processing failed for Kafka message: {}", e.getMessage(), e);
-            return buildErrorResponse(request, "Erro ao processar com IA: " + e.getMessage());
+            log.error("AI processing failed for Kafka message title '{}': {}", request.title(), e.getMessage(), e);
+            return buildErrorResponse(request, "AI processing error: " + e.getMessage());
 
         } catch (Exception e) {
-            log.error("Unexpected error processing Kafka message: {}", e.getMessage(), e);
-            return buildErrorResponse(request, "Erro inesperado: " + e.getMessage());
+            log.error("Unexpected error processing Kafka message title '{}': {}", request.title(), e.getMessage(), e);
+            return buildErrorResponse(request, "Unexpected error: " + e.getMessage());
         }
     }
 
@@ -86,13 +108,8 @@ public class ProcessKafkaMessageUseCase {
     }
 
     public String resolveKey(BrainHealthRequestMessage request) {
+        // Usa correlationId se disponível, senão usa userId
         return Optional.ofNullable(request.correlationId())
-                .orElse(request.userId());
-    }
-
-    private static class ArticleNotFoundException extends RuntimeException {
-        public ArticleNotFoundException(String question) {
-            super(String.format("No article found for question: %s", question));
-        }
+                .orElse(String.valueOf(request.userId()));
     }
 }

@@ -17,7 +17,7 @@ public class BrainHealthKafkaProducer {
 
     private final KafkaTemplate<String, BrainHealthResponseMessage> kafkaTemplate;
 
-    @Value("${kafka.topic.brain-health-response}")
+    @Value("${kafka.topic.producer}")
     private String responseTopic;
 
     public void sendResponse(String key, BrainHealthResponseMessage responseMessage) {
@@ -39,16 +39,5 @@ public class BrainHealthKafkaProducer {
                         responseTopic, responseMessage.correlationId(), ex);
             }
         });
-    }
-
-    public void sendResponseSync(String key, BrainHealthResponseMessage responseMessage) throws Exception {
-        log.info("Sending response synchronously to topic '{}' with key '{}'", responseTopic, key);
-
-        SendResult<String, BrainHealthResponseMessage> result =
-                kafkaTemplate.send(responseTopic, key, responseMessage).get();
-
-        log.info("Sync response sent - partition: {}, offset: {}",
-                result.getRecordMetadata().partition(),
-                result.getRecordMetadata().offset());
     }
 }
