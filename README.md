@@ -9,16 +9,22 @@
 
 Microserviço de geração de conteúdo médico com IA, buscando artigos em fontes confiáveis e processando com OpenAI.
 
+> ⚠️ **ATENÇÃO**: Este serviço requer uma **chave válida da OpenAI** para funcionar. Sem ela, o serviço não iniciará.
+> 
+> 🔑 **Obtenha sua chave gratuita em**: https://platform.openai.com/api-keys
+
 ---
 
 ## 📋 Índice
 
 - [Sobre](#sobre)
+- [⚠️ Configuração OpenAI (OBRIGATÓRIA)](#️-configuração-openai-obrigatória)
 - [Arquitetura](#arquitetura)
 - [Pré-requisitos](#pré-requisitos)
 - [Instalação](#instalação)
 - [Configuração](#configuração)
 - [Executando](#executando)
+- [Integração com Check Health](#-integração-com-check-health-service)
 - [Testes](#testes)
 - [API](#api)
 - [Documentação](#documentação)
@@ -38,6 +44,78 @@ O Brain Health é um microserviço que:
    - Quiz educativo
 
 **Versão Atual:** 2.0.0 (Refatorado com Clean Architecture)
+
+---
+
+## ⚠️ Configuração OpenAI (OBRIGATÓRIA)
+
+### 🔑 Passo 1: Obter a Chave API
+
+1. Acesse: https://platform.openai.com/api-keys
+2. Faça login ou crie uma conta (gratuita para começar)
+3. Clique em **"Create new secret key"**
+4. Copie a chave (começa com `sk-proj-...`)
+
+⚠️ **Importante**: Guarde a chave em local seguro. Você não poderá vê-la novamente!
+
+### 📝 Passo 2: Configurar no Projeto
+
+#### Se usar Docker Compose (Recomendado):
+
+Na **raiz do projeto** (onde está o `docker-compose.yaml`), edite o arquivo `.env`:
+
+```env
+# Arquivo: .env (raiz do projeto)
+OPENAI_API_KEY=sk-proj-xxxxxxxxxxxxxxxxxxxxxxxxxx
+```
+
+#### Se usar execução local:
+
+**Windows (PowerShell):**
+```powershell
+$env:OPENAI_API_KEY="sk-proj-xxxxxxxxxxxxxxxxxxxxxxxxxx"
+```
+
+**Linux/Mac:**
+```bash
+export OPENAI_API_KEY="sk-proj-xxxxxxxxxxxxxxxxxxxxxxxxxx"
+```
+
+### ✅ Passo 3: Verificar
+
+Após configurar, inicie o serviço:
+
+```bash
+# Docker Compose
+docker-compose up -d brain-health-service
+
+# Local
+mvn spring-boot:run
+```
+
+Verifique se iniciou corretamente:
+
+```bash
+curl http://localhost:8082/actuator/health
+```
+
+Se ver `"status": "UP"`, está funcionando! 🎉
+
+### 🚨 Erros Comuns
+
+#### Erro: "OpenAI API key must be set"
+- ❌ Chave não configurada ou vazia
+- ✅ Verifique o arquivo `.env` ou variável de ambiente
+- ✅ Reinicie o serviço após configurar
+
+#### Erro: "Unauthorized" (401) da OpenAI
+- ❌ Chave inválida ou expirada
+- ✅ Gere uma nova chave em https://platform.openai.com/api-keys
+
+#### Serviço não inicia no Docker
+- ❌ Arquivo `.env` não está na raiz do projeto
+- ✅ Crie o arquivo `.env` ao lado do `docker-compose.yaml`
+- ✅ Execute: `docker-compose down && docker-compose up -d --build`
 
 ---
 
@@ -82,34 +160,107 @@ O Brain Health é um microserviço que:
 
 ## 📦 Pré-requisitos
 
+### Execução com Docker Compose (Recomendado)
+- **Docker & Docker Compose** - [Download](https://www.docker.com/products/docker-desktop)
+- **OpenAI API Key** - [Get Key](https://platform.openai.com/api-keys) ⚠️ **OBRIGATÓRIO**
+
+### Execução Standalone
 - **Java 21+** - [Download](https://adoptium.net/)
 - **Maven 3.8+** - [Download](https://maven.apache.org/download.cgi)
 - **OpenAI API Key** - [Get Key](https://platform.openai.com/api-keys)
+- **PostgreSQL** - Para persistência de dados
+- **Kafka** - Para mensageria
 
 ---
 
 ## 🚀 Instalação
 
-### 1. Clone o repositório
+### Opção 1: Docker Compose (Integrado - Recomendado)
+
+O Brain Health agora faz parte da arquitetura de microserviços integrada!
+
+#### 1. Configure a chave OpenAI
+
+Na **raiz do projeto principal** (não na pasta brain-health), crie/edite o arquivo `.env`:
+
+```bash
+# No diretório raiz (onde está o docker-compose.yaml)
+cd ../
+```
+
+Edite o arquivo `.env`:
+```env
+# OpenAI API Key (OBRIGATÓRIO)
+OPENAI_API_KEY=sk-proj-xxxxxxxxxxxxxxxxxxxxxxxxxx
+
+# Outros já estão configurados no docker-compose
+POSTGRES_DB=checkhealth
+POSTGRES_USER=admin
+POSTGRES_PASSWORD=admin123
+```
+
+⚠️ **Importante**: Sem a chave OpenAI válida, o serviço **não iniciará**!
+
+#### 2. Inicie todos os serviços
+
+```bash
+docker-compose up -d --build
+```
+
+Isso iniciará:
+- ✅ **Config Service** (porta 8888) - Configuração centralizada
+- ✅ **Discovery Service** (porta 8761) - Eureka
+- ✅ **API Gateway** (porta 8080) - Gateway de entrada
+- ✅ **PostgreSQL** (porta 5432) - Banco compartilhado
+- ✅ **Kafka + Zookeeper** (porta 9092) - Mensageria
+- ✅ **Check Health Service** (porta 8081) - Gerenciamento de metas
+- ✅ **Brain Health Service** (porta 8082) - Este serviço!
+- ✅ **Kafka UI** (porta 8090) - Interface do Kafka
+
+#### 3. Verifique o status
+
+```bash
+# Ver todos os serviços
+docker-compose ps
+
+# Ver logs do brain-health
+docker-compose logs -f brain-health-service
+
+# Verificar health
+curl http://localhost:8082/actuator/health
+
+# Ver no Eureka Dashboard
+# Abra: http://localhost:8761
+```
+
+---
+
+### Opção 2: Execução Standalone (Desenvolvimento)
+
+#### 1. Clone o repositório
 
 ```bash
 git clone https://github.com/your-org/brain-health.git
 cd brain-health
 ```
 
-### 2. Configure variáveis de ambiente
+#### 2. Configure variáveis de ambiente
 
-#### Windows (PowerShell)
+**Windows (PowerShell):**
 ```powershell
 $env:OPENAI_API_KEY="sk-your-key-here"
+$env:SPRING_DATASOURCE_URL="jdbc:postgresql://localhost:5432/checkhealth"
+$env:SPRING_KAFKA_BOOTSTRAP_SERVERS="localhost:9092"
 ```
 
-#### Linux/Mac
+**Linux/Mac:**
 ```bash
 export OPENAI_API_KEY="sk-your-key-here"
+export SPRING_DATASOURCE_URL="jdbc:postgresql://localhost:5432/checkhealth"
+export SPRING_KAFKA_BOOTSTRAP_SERVERS="localhost:9092"
 ```
 
-### 3. Build do projeto
+#### 3. Build do projeto
 
 ```bash
 mvn clean install
@@ -119,9 +270,110 @@ mvn clean install
 
 ## ⚙️ Configuração
 
-### application.properties
+### Arquitetura de Configuração
+
+O Brain Health agora usa **Spring Cloud Config** para configuração centralizada:
+
+```
+Config Service (8888)
+  └── config/brain-health-service.yml (configuração centralizada)
+      ├── PostgreSQL (banco compartilhado com check-health)
+      ├── Kafka (tópicos: goal.created → goal.progress.updated)
+      └── Eureka (descoberta de serviços)
+
+Brain Health (8082)
+  └── application.yml (configuração local + OpenAI)
+      ├── spring.config.import → busca config do Config Service
+      ├── OpenAI API Key (obrigatória)
+      └── Eureka Client
+```
+
+### application.yml (Serviço Local)
+
+```yaml
+spring:
+  application:
+    name: brain-health
+  config:
+    import: optional:configserver:http://config-service:8888
+  
+  ai:
+    openai:
+      api-key: ${OPENAI_API_KEY}  # ⚠️ OBRIGATÓRIA
+      chat:
+        options:
+          model: gpt-4o-mini
+          temperature: 0.7
+
+server:
+  port: 8080
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://discovery-service:8761/eureka/
+    register-with-eureka: true
+    fetch-registry: true
+```
+
+### brain-health-service.yml (Config Service)
+
+Configuração centralizada gerenciada pelo Config Service:
+
+```yaml
+spring:
+  datasource:
+    url: jdbc:postgresql://postgres:5432/checkhealth
+    username: admin
+    password: admin123
+  
+  jpa:
+    hibernate:
+      ddl-auto: update
+  
+  kafka:
+    bootstrap-servers: kafka:9092
+    consumer:
+      group-id: brain-health-consumer-group
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+
+# Tópicos Kafka
+kafka:
+  topic:
+    consumer: goal.created        # Consome de check-health
+    producer: goal.progress.updated  # Produz para check-health
+```
+
+### Fluxo de Configuração
+
+1. **Brain Health inicia** → Busca configurações do Config Service (8888)
+2. **Config Service** → Retorna configurações de banco, kafka, eureka
+3. **Variável local** → OPENAI_API_KEY vem do `.env` ou variável de ambiente
+4. **Eureka Registration** → Registra-se no Discovery Service (8761)
+5. **Pronto para uso** → API disponível na porta 8082
+
+### Variáveis de Ambiente (Docker)
+
+Configuradas no `docker-compose.yaml`:
+
+```yaml
+environment:
+  SPRING_PROFILES_ACTIVE: default
+  SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/checkhealth
+  SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+  EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-service:8761/eureka/
+  OPENAI_API_KEY: ${OPENAI_API_KEY}  # Lê do arquivo .env
+```
+
+### Legacy Configuration (Standalone)
+
+Para execução standalone sem Config Service:
 
 ```properties
+# application.properties (modo standalone)
+
 # Spring Application
 spring.application.name=brain-health
 
@@ -144,30 +396,167 @@ management.endpoint.health.show-details=always
 
 ## 🏃 Executando
 
-### Modo Desenvolvimento
+### Modo 1: Docker Compose (Produção - Recomendado)
+
+**Inicie toda a stack de microserviços:**
 
 ```bash
+# Na raiz do projeto (onde está o docker-compose.yaml)
+docker-compose up -d --build
+```
+
+**Acesse os serviços:**
+- 🧠 Brain Health API: http://localhost:8082
+- 📋 Swagger UI: http://localhost:8082/swagger-ui.html
+- 🏥 Health Check: http://localhost:8082/actuator/health
+- 🌐 Eureka Dashboard: http://localhost:8761
+- 📊 Kafka UI: http://localhost:8090
+
+**Gerenciar serviços:**
+
+```bash
+# Ver status de todos os serviços
+docker-compose ps
+
+# Ver logs do brain-health
+docker-compose logs -f brain-health-service
+
+# Reiniciar apenas o brain-health
+docker-compose restart brain-health-service
+
+# Parar todos os serviços
+docker-compose down
+
+# Parar e remover volumes (limpa banco)
+docker-compose down -v
+```
+
+### Modo 2: Desenvolvimento Local
+
+**Com Config Service e Eureka rodando:**
+
+```bash
+# Certifique-se que Config Service (8888) e Eureka (8761) estão rodando
 mvn spring-boot:run
 ```
 
-### Modo Produção
+**Standalone (sem Config Service):**
 
 ```bash
-java -jar target/brain-health-0.0.1-SNAPSHOT.jar
+# Configure as variáveis de ambiente primeiro
+export OPENAI_API_KEY="sk-your-key"
+export SPRING_CLOUD_CONFIG_ENABLED=false
+
+# Execute
+mvn spring-boot:run -Dspring.profiles.active=standalone
 ```
 
-### Docker (Opcional)
+### Modo 3: Produção (JAR)
 
 ```bash
+# Build
+mvn clean package -DskipTests
+
+# Execute
+java -jar target/brain-health-0.0.1-SNAPSHOT.jar \
+  -DOPENAI_API_KEY=sk-your-key \
+  -DSPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/checkhealth \
+  -DSPRING_KAFKA_BOOTSTRAP_SERVERS=localhost:9092
+```
+
+### Modo 4: Docker Standalone
+
+```bash
+# Build da imagem
 docker build -t brain-health:2.0.0 .
-docker run -p 8080:8080 \
+
+# Execute standalone
+docker run -p 8082:8080 \
   -e OPENAI_API_KEY=sk-your-key \
+  -e SPRING_CLOUD_CONFIG_ENABLED=false \
   brain-health:2.0.0
 ```
 
-A aplicação estará disponível em: **http://localhost:8080**
+### Verificar se está funcionando
 
-### 🐳 Interfaces do Kafka para Teste
+```bash
+# Health check
+curl http://localhost:8082/actuator/health
+
+# Listar endpoints disponíveis
+curl http://localhost:8082/actuator
+
+# Ver no Swagger
+# Abra: http://localhost:8082/swagger-ui.html
+```
+
+---
+
+## 🔗 Integração com Check Health Service
+
+O Brain Health integra-se com o Check Health através de **Kafka**:
+
+### Fluxo de Integração
+
+```
+Check Health (8081)                Brain Health (8082)
+      │                                    │
+      │ 1. Cria Meta                      │
+      ├──────────────────────────────────►│
+      │                                    │
+      │ 2. Publica: goal.created          │
+      │    ├─ goalId                       │
+      │    ├─ userId                       │
+      │    ├─ goalType                     │
+      │    └─ targetValue                  │
+      ├──────────────────────────────────►│
+      │                                    │
+      │                          3. Processa com IA
+      │                             ├─ Busca artigos
+      │                             ├─ Gera conteúdo
+      │                             └─ Cria quiz
+      │                                    │
+      │ 4. Publica: goal.progress.updated │
+      │    ├─ goalId                       │
+      │    ├─ article (título, conteúdo)  │
+      │    ├─ recommendations              │
+      │    └─ quiz (perguntas)             │
+      │◄──────────────────────────────────┤
+      │                                    │
+      │ 5. Atualiza progresso da meta     │
+      │                                    │
+```
+
+### Tópicos Kafka
+
+- **Consumidor**: `goal.created` - Recebe novas metas do Check Health
+- **Produtor**: `goal.progress.updated` - Envia artigos e questionários processados
+
+### Testar Integração
+
+```bash
+# 1. Criar uma meta no Check Health
+curl -X POST http://localhost:8081/api/goals \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Melhorar Sono",
+    "goalType": "SLEEP_IMPROVEMENT",
+    "targetValue": 8.0
+  }'
+
+# 2. Verificar no Kafka UI que o evento foi publicado
+# Abra: http://localhost:8090
+# Tópico: goal.created
+
+# 3. Brain Health processa automaticamente
+
+# 4. Verificar resposta no tópico goal.progress.updated
+# Kafka UI → Topics → goal.progress.updated
+```
+
+---
+
+## 🐳 Kafka Testing Interfaces
 
 O projeto inclui três interfaces web para gerenciar e testar o Kafka:
 

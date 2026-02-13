@@ -1,6 +1,8 @@
 spring:
   application:
     name: brain-health
+  config:
+    import: optional:configserver:http://config-service:8888
 
   ai:
     openai:
@@ -18,6 +20,19 @@ spring:
       properties:
         compression.type: none
 
+server:
+  port: 8080
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://discovery-service:8761/eureka/
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    prefer-ip-address: true
+    hostname: brain-health-service
+
 # Kafka Topics
 kafka:
   topic:
@@ -30,12 +45,35 @@ management:
     web:
       exposure:
         include: health,info,metrics,prometheus
+      base-path: /actuator
   endpoint:
     health:
       show-details: always
+      show-components: always
+      probes:
+        enabled: true
+    info:
+      enabled: true
   health:
     kafka:
       enabled: false
+    livenessstate:
+      enabled: true
+    readinessstate:
+      enabled: true
+  info:
+    env:
+      enabled: true
+    java:
+      enabled: true
+    os:
+      enabled: true
+
+info:
+  app:
+    name: ${spring.application.name}
+    description: AI-powered medical article generation and questionnaire service with Kafka integration
+    version: 0.0.1-SNAPSHOT
 
 # External Services Configuration
 external-services:
