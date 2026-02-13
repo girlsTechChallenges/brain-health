@@ -21,8 +21,8 @@ spring:
 # Kafka Topics
 kafka:
   topic:
-    consumer: brain-health-request
-    producer: brain-health-response
+    consumer: goal.created
+    producer: goal.progress.updated
 
 # Actuator Configuration
 management:

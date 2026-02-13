@@ -88,7 +88,7 @@ services:
     depends_on:
       - kafka
     ports:
-      - "8080:8080"
+      - "9090:8080"   # host:container
     env_file:
       - open_ai_api.env   # carrega variáveis externas
     environment:
