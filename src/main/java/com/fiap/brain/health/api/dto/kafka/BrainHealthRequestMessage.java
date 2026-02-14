@@ -27,15 +27,6 @@ public record BrainHealthRequestMessage(
         String correlationId,
         LocalDateTime requestedAt
 ) {
-    public BrainHealthRequestMessage {
-        if (userId == null) {
-            throw new IllegalArgumentException("userId is required");
-        }
-
-        if (title == null || title.isBlank()) {
-            throw new IllegalArgumentException("title is required");
-        }
-    }
 
     public static Builder builder() {
         return new Builder();
