@@ -41,9 +41,9 @@ public record BrainHealthRequestMessage(
         return new Builder();
     }
 
-    public static class Builder {
-        private Long goalId;
+    public static class Builder {        
         private Long userId;
+        private Long goalId;
         private String category;
         private String title;
         private String description;
@@ -51,13 +51,13 @@ public record BrainHealthRequestMessage(
         private String correlationId;
         private LocalDateTime requestedAt;
 
-        public Builder goalId(Long goalId) {
-            this.goalId = goalId;
+        public Builder userId(Long userId) {
+            this.userId = userId;
             return this;
         }
 
-        public Builder userId(Long userId) {
-            this.userId = userId;
+        public Builder goalId(Long goalId) {
+            this.goalId = goalId;
             return this;
         }
 
@@ -92,9 +92,9 @@ public record BrainHealthRequestMessage(
         }
 
         public BrainHealthRequestMessage build() {
-            return new BrainHealthRequestMessage(
-                    goalId,
+            return new BrainHealthRequestMessage(                    
                     userId,
+                    goalId,
                     category,
                     title,
                     description,
