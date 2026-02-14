@@ -19,7 +19,9 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.SendResult;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -53,17 +55,18 @@ class BrainHealthKafkaProducerTest {
                 "Conclusão sobre caminhada",
                 List.of(new Quiz("Quantos minutos?", List.of("10", "30", "60"), "30")),
                 "https://source.com",
-                java.time.LocalDateTime.now()
+                LocalDateTime.now()
         );
 
         validResponseMessage = new BrainHealthResponseMessage(
                 "msg-123",
                 12345L,
-                "corr-456",
+                12345L,
+                "corr-trace-12345",
                 articleResponse,
                 BrainHealthResponseMessage.ProcessingStatus.SUCCESS,
                 null,
-                java.time.LocalDateTime.now()
+                LocalDateTime.now()
         );
     }
 
@@ -135,7 +138,7 @@ class BrainHealthKafkaProducerTest {
             verify(kafkaTemplate).send(anyString(), anyString(), messageCaptor.capture());
             BrainHealthResponseMessage captured = messageCaptor.getValue();
             assertThat(captured.messageId()).isEqualTo("msg-123");
-            assertThat(captured.correlationId()).isEqualTo("corr-456");
+            assertThat(captured.correlationId()).isEqualTo("corr-trace-12345");
             assertThat(captured.userId()).isEqualTo(12345L);
         }
 
@@ -228,10 +231,14 @@ class BrainHealthKafkaProducerTest {
         void shouldAcceptMessageWithNullGoalId() {
             // Arrange
             BrainHealthResponseMessage messageWithoutGoal = new BrainHealthResponseMessage(
-                    "msg-no-goal", 12345L, "corr-no-goal",
+                    "msg",
+                    12345L,
+                    12345L,
+                    UUID.randomUUID().toString(),
                     validResponseMessage.articleResponse(),
                     BrainHealthResponseMessage.ProcessingStatus.SUCCESS,
-                    null, java.time.LocalDateTime.now());
+                    null,
+                    LocalDateTime.now());
             CompletableFuture<SendResult<String, BrainHealthResponseMessage>> future =
                     createSuccessfulFuture();
             when(kafkaTemplate.send(anyString(), anyString(), any())).thenReturn(future);
@@ -383,10 +390,14 @@ class BrainHealthKafkaProducerTest {
         void shouldIncludeCorrelationIdInProcessing() {
             // Arrange
             BrainHealthResponseMessage messageWithCorrelation = new BrainHealthResponseMessage(
-                    "msg-trace", 12345L, "corr-trace-12345",
+                    "msg-123",
+                    12345L,
+                    12345L,
+                    "corr-trace-12345",
                     validResponseMessage.articleResponse(),
                     BrainHealthResponseMessage.ProcessingStatus.SUCCESS,
-                    null, java.time.LocalDateTime.now());
+                    null,
+                    LocalDateTime.now());
             CompletableFuture<SendResult<String, BrainHealthResponseMessage>> future =
                     createSuccessfulFuture();
             when(kafkaTemplate.send(anyString(), anyString(), any())).thenReturn(future);

@@ -12,6 +12,9 @@ public record BrainHealthResponseMessage(
         @JsonProperty("userId")
         Long userId,
 
+        @JsonProperty("goalId")
+        Long goalId,
+
         @JsonProperty("correlationId")
         String correlationId,
 
@@ -48,6 +51,7 @@ public record BrainHealthResponseMessage(
     public static class Builder {
         private String messageId;
         private Long userId;
+        private Long goalId;
         private String correlationId;
         private ArticleResponse articleResponse;
         private ProcessingStatus status;
@@ -59,8 +63,13 @@ public record BrainHealthResponseMessage(
             return this;
         }
 
-        public Builder userId(Long userId) {
+         public Builder userId(Long userId) {
             this.userId = userId;
+            return this;
+        }
+
+        public Builder goalId(Long goalId) {
+            this.goalId = goalId;
             return this;
         }
 
@@ -93,6 +102,7 @@ public record BrainHealthResponseMessage(
             return new BrainHealthResponseMessage(
                     messageId,
                     userId,
+                    goalId,
                     correlationId,
                     articleResponse,
                     status,

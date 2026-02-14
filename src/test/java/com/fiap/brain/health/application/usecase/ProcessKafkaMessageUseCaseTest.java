@@ -45,7 +45,7 @@ class ProcessKafkaMessageUseCaseTest {
     private AIProcessingPort.AIProcessingResult aiResult;
     private ArticleResponse articleResponse;
 
-    private static final Long USER_ID = 12345L;
+    private static final Long USER_ID = 1L;
     private static final Long GOAL_ID = 1L;
     private static final String MESSAGE_ID = "msg-123";
     private static final String CORRELATION_ID = "corr-456";
