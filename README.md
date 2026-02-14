@@ -88,16 +88,55 @@ O Brain Health é um microserviço que:
 
 ---
 
-## 🚀 Instalação
+## 🚀 Instalação e Execução Rápida
 
-### 1. Clone o repositório
+### Requisitos
+- **Docker** e **Docker Compose** instalados
+- (Opcional) **Java 21+** e **Maven 3.8+** para desenvolvimento local
+
+### Iniciando o Projeto (Um Único Comando!)
 
 ```bash
+# 1. Clone o repositório
 git clone https://github.com/your-org/brain-health.git
 cd brain-health
+
+# 2. Suba toda a infraestrutura (Kafka, Zookeeper, Aplicação)
+docker-compose up -d
 ```
 
-### 2. Configure variáveis de ambiente
+✅ **Pronto!** A aplicação estará rodando em: **http://localhost:9090**
+
+> **Nota:** O projeto já vem configurado com valores padrão. Para usar as funcionalidades de IA da OpenAI, configure sua chave API (veja seção abaixo).
+
+---
+
+## ⚙️ Configuração da OpenAI API (Opcional)
+
+### Para usar as funcionalidades de IA:
+
+1. Obtenha sua chave em: [OpenAI Platform](https://platform.openai.com/api-keys)
+
+2. Edite o arquivo `open_ai_api.env`:
+   ```bash
+   # open_ai_api.env
+   OPENAI_API_KEY=sk-proj-sua-chave-real-aqui
+   ```
+
+3. Reinicie o container da aplicação:
+   ```bash
+   docker-compose restart brain-health-app
+   ```
+
+> **Arquivo de exemplo:** Consulte `open_ai_api.env.example` para referência
+
+---
+
+## 🛠️ Configuração para Desenvolvimento Local
+
+Se preferir rodar localmente sem Docker:
+
+### 1. Configure a variável de ambiente
 
 #### Windows (PowerShell)
 ```powershell
@@ -109,99 +148,51 @@ $env:OPENAI_API_KEY="sk-your-key-here"
 export OPENAI_API_KEY="sk-your-key-here"
 ```
 
-### 3. Build do projeto
+### 2. Execute a aplicação
 
-```bash
-mvn clean install
-```
-
----
-
-## ⚙️ Configuração
-
-### application.properties
-
-```properties
-# Spring Application
-spring.application.name=brain-health
-
-# OpenAI Configuration
-spring.ai.openai.api-key=${OPENAI_API_KEY}
-spring.ai.openai.chat.options.model=gpt-4o-mini
-spring.ai.openai.chat.options.temperature=0.7
-
-# External Services - CREMESP
-external-services.cremesp.base-url=https://cremesp.org.br/pesquisar.php
-external-services.cremesp.max-content-length=8000
-external-services.cremesp.timeout-seconds=30
-
-# Actuator
-management.endpoints.web.exposure.include=health,info,metrics
-management.endpoint.health.show-details=always
-```
-
----
-
-## 🏃 Executando
-
-### Modo Desenvolvimento
-
+#### Modo Desenvolvimento
 ```bash
 mvn spring-boot:run
 ```
 
-### Modo Produção
-
+#### Modo Produção
 ```bash
+mvn clean install
 java -jar target/brain-health-0.0.1-SNAPSHOT.jar
-```
-
-### Docker (Opcional)
-
-```bash
-docker build -t brain-health:2.0.0 .
-docker run -p 8080:8080 \
-  -e OPENAI_API_KEY=sk-your-key \
-  brain-health:2.0.0
 ```
 
 A aplicação estará disponível em: **http://localhost:8080**
 
-### 🐳 Interfaces do Kafka para Teste
+---
 
-O projeto inclui três interfaces web para gerenciar e testar o Kafka:
+## 🐳 Serviços Disponíveis (Docker)
 
-#### Iniciar todas as interfaces:
+## 🐳 Serviços Disponíveis (Docker)
 
-**Windows:**
-```bash
-.\scripts\start-kafka-ui.bat
-```
+Após executar `docker-compose up -d`, os seguintes serviços estarão disponíveis:
 
-**Linux/Mac:**
-```bash
-./scripts/start-kafka-ui.sh
-```
+| Serviço | URL | Descrição |
+|---------|-----|-----------|
+| **Brain Health App** | http://localhost:9090 | API Principal |
+| **Kafka UI** | http://localhost:8085 | Interface moderna para gerenciar Kafka |
+| **Kafdrop** | http://localhost:9000 | Interface leve para visualizar tópicos |
+| **Kafka REST Proxy** | http://localhost:8082 | API REST para Kafka |
+| **Kafka Broker** | localhost:9092 | Kafka (acesso direto) |
+| **Zookeeper** | localhost:2181 | Zookeeper | 
 
-#### Ou manualmente:
+### 📖 Gerenciamento do Kafka
 
-```bash
-docker-compose up -d
-```
+**Kafka UI (Recomendado)** - http://localhost:8085
+- Interface moderna e completa
+- Criar tópicos, enviar mensagens, monitorar consumers
 
-#### Interfaces disponíveis:
+**Kafdrop** - http://localhost:9000
+- Interface leve e rápida
+- Visualizar tópicos e mensagens facilmente
 
-1. **Kafka UI (Provectus)** - http://localhost:8080
-   - Interface moderna e completa
-   - Criar tópicos, enviar mensagens, monitorar consumers
-
-2. **Kafdrop** - http://localhost:9000
-   - Interface leve e rápida
-   - Visualizar tópicos e mensagens facilmente
-
-3. **Kafka REST Proxy** - http://localhost:8082
-   - API REST para produzir/consumir mensagens
-   - Ideal para testes automatizados
+**Kafka REST Proxy** - http://localhost:8082
+- API REST para produzir/consumir mensagens
+- Ideal para testes automatizados
 
 📖 **Guia completo:** Consulte [KAFKA_TESTING_GUIDE.md](KAFKA_TESTING_GUIDE.md) para exemplos detalhados e instruções de uso.
 
